@@ -5,7 +5,7 @@ Trump Tariffs Impact Analysis on Japanese Cars in California
 A comprehensive Python application for analyzing the economic impact of
 Trump's tariffs on Japanese automobile sales in California.
 
-Streamlit-optimized version with minimal dependencies.
+Streamlit-only version using built-in charting capabilities.
 
 Author: AI Assistant
 Date: August 2025
@@ -14,11 +14,7 @@ Date: August 2025
 import pandas as pd
 import numpy as np
 import streamlit as st
-import plotly.express as px
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 from datetime import datetime, timedelta
-import json
 from typing import Dict, List, Tuple, Optional
 from dataclasses import dataclass
 import warnings
@@ -294,170 +290,71 @@ class DataAnalyzer:
             
             monthly_data.append({
                 'date': date,
-                'japanese_avg_price': jp_price,
-                'non_japanese_avg_price': non_jp_price,
-                'japanese_sales': jp_sales,
-                'non_japanese_sales': non_jp_sales,
-                'japanese_market_share': jp_market_share,
-                'tariff_rate': tariff_rate
+                'Japanese Avg Price': jp_price,
+                'Non-Japanese Avg Price': non_jp_price,
+                'Japanese Sales': jp_sales,
+                'Non-Japanese Sales': non_jp_sales,
+                'Japanese Market Share (%)': jp_market_share,
+                'Tariff Rate (%)': tariff_rate
             })
         
         return pd.DataFrame(monthly_data)
 
-def create_tariff_timeline_chart(tariff_df: pd.DataFrame) -> go.Figure:
-    """Create tariff timeline visualization"""
-    fig = go.Figure()
+def display_tariff_timeline(tariff_df: pd.DataFrame):
+    """Display tariff timeline using Streamlit charts"""
+    st.subheader("📊 Tariff Timeline")
     
-    # Add tariff rate line
-    fig.add_trace(go.Scatter(
-        x=tariff_df['date'],
-        y=tariff_df['tariff_rate'],
-        mode='lines+markers',
-        name='Tariff Rate (%)',
-        line=dict(color='red', width=3),
-        marker=dict(size=8),
-        hovertemplate='Date: %{x}<br>Tariff Rate: %{y}%<extra></extra>'
-    ))
+    # Prepare data for chart
+    chart_data = tariff_df.copy()
+    chart_data = chart_data.set_index('date')
+    chart_data = chart_data[['tariff_rate']].rename(columns={'tariff_rate': 'Tariff Rate (%)'})
     
-    # Add policy annotations
-    annotations = [
-        ('2018-07-06', 'Tariffs Begin', 10),
-        ('2019-01-01', 'Escalation', 25),
-        ('2020-01-15', 'Phase One Deal', 15)
-    ]
+    # Create line chart
+    st.line_chart(chart_data, height=400)
     
-    for date, text, rate in annotations:
-        fig.add_annotation(
-            x=date,
-            y=rate,
-            text=text,
-            showarrow=True,
-            arrowhead=2,
-            arrowcolor='gray',
-            bgcolor='white',
-            bordercolor='gray'
-        )
-    
-    fig.update_layout(
-        title='Trump Administration Tariff Timeline on Japanese Automobiles',
-        xaxis_title='Date',
-        yaxis_title='Tariff Rate (%)',
-        template='plotly_white',
-        hovermode='x unified'
-    )
-    
-    return fig
+    # Add policy annotations as text
+    st.markdown("""
+    **Key Policy Dates:**
+    - **July 6, 2018**: Initial 10% tariffs implemented
+    - **January 1, 2019**: Escalation to 25% tariffs
+    - **January 15, 2020**: Phase One Deal - reduction to 15%
+    """)
 
-def create_price_comparison_chart(monthly_trends: pd.DataFrame) -> go.Figure:
-    """Create price comparison chart"""
-    fig = go.Figure()
+def display_price_comparison(monthly_trends: pd.DataFrame):
+    """Display price comparison using Streamlit charts"""
+    st.subheader("💰 Price Comparison: Japanese vs Non-Japanese Brands")
     
-    fig.add_trace(go.Scatter(
-        x=monthly_trends['date'],
-        y=monthly_trends['japanese_avg_price'],
-        mode='lines',
-        name='Japanese Brands',
-        line=dict(color='red', width=3),
-        hovertemplate='Date: %{x}<br>Price: $%{y:,.0f}<extra></extra>'
-    ))
+    # Prepare data for chart
+    price_data = monthly_trends.set_index('date')[['Japanese Avg Price', 'Non-Japanese Avg Price']]
     
-    fig.add_trace(go.Scatter(
-        x=monthly_trends['date'],
-        y=monthly_trends['non_japanese_avg_price'],
-        mode='lines',
-        name='Non-Japanese Brands',
-        line=dict(color='blue', width=3),
-        hovertemplate='Date: %{x}<br>Price: $%{y:,.0f}<extra></extra>'
-    ))
+    # Create line chart
+    st.line_chart(price_data, height=400)
     
-    # Add tariff start line
-    fig.add_vline(
-        x=config.TARIFF_START_DATE,
-        line_dash="dash",
-        line_color="gray",
-        annotation_text="Tariffs Begin",
-        annotation_position="top"
-    )
-    
-    fig.update_layout(
-        title='Average Car Prices: Japanese vs Non-Japanese Brands in California',
-        xaxis_title='Date',
-        yaxis_title='Average Price ($)',
-        template='plotly_white',
-        hovermode='x unified'
-    )
-    
-    return fig
+    # Add tariff start indicator
+    tariff_start = pd.to_datetime(config.TARIFF_START_DATE)
+    st.markdown(f"**Vertical line would indicate tariff start date: {tariff_start.strftime('%B %d, %Y')}**")
 
-def create_market_share_chart(monthly_trends: pd.DataFrame) -> go.Figure:
-    """Create market share visualization"""
-    fig = make_subplots(
-        rows=2, cols=1,
-        subplot_titles=('Sales Volume (California)', 'Japanese Market Share (%)'),
-        vertical_spacing=0.1
-    )
+def display_sales_analysis(monthly_trends: pd.DataFrame):
+    """Display sales analysis using Streamlit charts"""
+    st.subheader("📈 Sales Volume Analysis")
     
-    # Sales volume
-    fig.add_trace(
-        go.Scatter(
-            x=monthly_trends['date'],
-            y=monthly_trends['japanese_sales'],
-            mode='lines',
-            name='Japanese Sales',
-            line=dict(color='red', width=2)
-        ),
-        row=1, col=1
-    )
+    # Sales volume chart
+    col1, col2 = st.columns(2)
     
-    fig.add_trace(
-        go.Scatter(
-            x=monthly_trends['date'],
-            y=monthly_trends['non_japanese_sales'],
-            mode='lines',
-            name='Non-Japanese Sales',
-            line=dict(color='blue', width=2)
-        ),
-        row=1, col=1
-    )
+    with col1:
+        st.write("**Monthly Sales Volume (California)**")
+        sales_data = monthly_trends.set_index('date')[['Japanese Sales', 'Non-Japanese Sales']]
+        st.area_chart(sales_data, height=300)
     
-    # Market share
-    fig.add_trace(
-        go.Scatter(
-            x=monthly_trends['date'],
-            y=monthly_trends['japanese_market_share'],
-            mode='lines',
-            name='Japanese Market Share',
-            line=dict(color='green', width=3),
-            showlegend=False
-        ),
-        row=2, col=1
-    )
-    
-    # Add tariff lines
-    fig.add_vline(
-        x=config.TARIFF_START_DATE,
-        line_dash="dash",
-        line_color="gray",
-        row=1, col=1
-    )
-    
-    fig.add_vline(
-        x=config.TARIFF_START_DATE,
-        line_dash="dash",
-        line_color="gray",
-        row=2, col=1
-    )
-    
-    fig.update_layout(
-        title='California Auto Sales Analysis',
-        height=600,
-        template='plotly_white'
-    )
-    
-    return fig
+    with col2:
+        st.write("**Japanese Market Share Over Time**")
+        market_share_data = monthly_trends.set_index('date')[['Japanese Market Share (%)']]
+        st.line_chart(market_share_data, height=300)
 
-def create_brand_analysis_chart(sales_df: pd.DataFrame) -> go.Figure:
-    """Create brand-specific analysis"""
+def display_brand_analysis(sales_df: pd.DataFrame):
+    """Display brand-specific analysis"""
+    st.subheader("🏢 Brand Performance Analysis")
+    
     ca_sales = sales_df[sales_df['region'] == 'California']
     tariff_start = pd.to_datetime(config.TARIFF_START_DATE)
     
@@ -474,37 +371,31 @@ def create_brand_analysis_chart(sales_df: pd.DataFrame) -> go.Figure:
         is_japanese = brand_data['is_japanese'].iloc[0]
         
         brand_changes.append({
-            'brand': brand,
-            'sales_change': change_pct,
-            'is_japanese': is_japanese
+            'Brand': brand,
+            'Sales Change (%)': round(change_pct, 1),
+            'Japanese Brand': 'Yes' if is_japanese else 'No',
+            'Pre-Tariff Sales': pre_sales,
+            'Post-Tariff Sales': post_sales
         })
     
-    brand_df = pd.DataFrame(brand_changes).sort_values('sales_change')
+    brand_df = pd.DataFrame(brand_changes).sort_values('Sales Change (%)')
     
-    # Create color mapping
-    colors = ['red' if jp else 'blue' for jp in brand_df['is_japanese']]
+    # Create bar chart data
+    chart_data = brand_df.set_index('Brand')[['Sales Change (%)']]
+    st.bar_chart(chart_data, height=400)
     
-    fig = go.Figure(data=[
-        go.Bar(
-            x=brand_df['brand'],
-            y=brand_df['sales_change'],
-            marker_color=colors,
-            hovertemplate='Brand: %{x}<br>Sales Change: %{y:.1f}%<extra></extra>'
-        )
-    ])
+    # Show top/bottom performers
+    col1, col2 = st.columns(2)
     
-    fig.update_layout(
-        title='Sales Volume Change by Brand (Pre vs Post Tariffs)',
-        xaxis_title='Brand',
-        yaxis_title='Sales Change (%)',
-        template='plotly_white',
-        xaxis_tickangle=-45
-    )
+    with col1:
+        st.write("**📉 Most Affected Brands**")
+        worst_performers = brand_df.head(5)[['Brand', 'Sales Change (%)', 'Japanese Brand']]
+        st.dataframe(worst_performers, hide_index=True)
     
-    # Add horizontal line at 0
-    fig.add_hline(y=0, line_dash="dash", line_color="gray")
-    
-    return fig
+    with col2:
+        st.write("**📈 Best Performing Brands**")
+        best_performers = brand_df.tail(5)[['Brand', 'Sales Change (%)', 'Japanese Brand']]
+        st.dataframe(best_performers, hide_index=True)
 
 def main():
     """Main Streamlit application"""
@@ -579,8 +470,7 @@ def main():
         st.markdown("---")
         
         # Tariff timeline
-        timeline_chart = create_tariff_timeline_chart(tariff_df)
-        st.plotly_chart(timeline_chart, use_container_width=True)
+        display_tariff_timeline(tariff_df)
         
         # Key insights
         st.subheader("🔍 Key Insights")
@@ -589,25 +479,24 @@ def main():
         with col1:
             st.info(f"""
             **Price Impact Summary:**
-            - Japanese brands saw {price_analysis['japanese_price_change']:.1f}% price increases
-            - Non-Japanese brands increased {price_analysis['non_japanese_price_change']:.1f}%
-            - Differential impact: {price_analysis['price_differential']:.1f} percentage points
+            • Japanese brands saw {price_analysis['japanese_price_change']:.1f}% price increases
+            • Non-Japanese brands increased {price_analysis['non_japanese_price_change']:.1f}%
+            • Differential impact: {price_analysis['price_differential']:.1f} percentage points
             """)
         
         with col2:
             st.warning(f"""
             **Market Share Impact:**
-            - Japanese market share dropped {abs(market_analysis['market_share_change']):.1f}pp
-            - From {market_analysis['pre_tariff_market_share']:.1f}% to {market_analysis['post_tariff_market_share']:.1f}%
-            - Total Japanese sales declined {market_analysis['japanese_sales_change']:.1f}%
+            • Japanese market share dropped {abs(market_analysis['market_share_change']):.1f}pp
+            • From {market_analysis['pre_tariff_market_share']:.1f}% to {market_analysis['post_tariff_market_share']:.1f}%
+            • Total Japanese sales declined {market_analysis['japanese_sales_change']:.1f}%
             """)
     
     with tab2:
         st.header("💰 Price Impact Analysis")
         
         # Price comparison chart
-        price_chart = create_price_comparison_chart(monthly_trends)
-        st.plotly_chart(price_chart, use_container_width=True)
+        display_price_comparison(monthly_trends)
         
         # Statistical analysis
         st.subheader("Statistical Summary")
@@ -632,13 +521,22 @@ def main():
             'average_price': ['mean', 'std', 'min', 'max']
         }).round(0)
         st.dataframe(price_summary, use_container_width=True)
+        
+        # Additional price trend visualization
+        st.subheader("Price Trends by Brand Type")
+        
+        # Group by Japanese/Non-Japanese and show monthly averages
+        price_trends = pricing_df.groupby(['date', 'is_japanese'])['average_price'].mean().reset_index()
+        price_trends['Brand Type'] = price_trends['is_japanese'].map({True: 'Japanese', False: 'Non-Japanese'})
+        price_pivot = price_trends.pivot(index='date', columns='Brand Type', values='average_price')
+        
+        st.line_chart(price_pivot, height=400)
     
     with tab3:
         st.header("📈 Sales Volume & Market Share Analysis")
         
-        # Market share chart
-        market_chart = create_market_share_chart(monthly_trends)
-        st.plotly_chart(market_chart, use_container_width=True)
+        # Market share analysis
+        display_sales_analysis(monthly_trends)
         
         # Market dynamics
         st.subheader("Market Dynamics Analysis")
@@ -663,50 +561,58 @@ def main():
         ca_avg = sales_df[sales_df['region'] == 'California']['sales_volume'].mean()
         national_avg = sales_df[sales_df['region'] == 'National']['sales_volume'].mean()
         
-        st.write(f"• California average monthly sales: {ca_avg:,.0f} units")
-        st.write(f"• National average monthly sales: {national_avg:,.0f} units")
-        st.write("• California shows similar patterns to national trends")
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.metric("California Avg Monthly Sales", f"{ca_avg:,.0f}", delta="units")
+        
+        with col2:
+            st.metric("National Avg Monthly Sales", f"{national_avg:,.0f}", delta="units")
+        
+        # Regional sales comparison chart
+        st.subheader("Regional Sales Comparison")
+        regional_data = sales_df.groupby(['date', 'region', 'is_japanese'])['sales_volume'].sum().reset_index()
+        japanese_regional = regional_data[regional_data['is_japanese'] == True]
+        japanese_pivot = japanese_regional.pivot(index='date', columns='region', values='sales_volume')
+        
+        st.line_chart(japanese_pivot, height=300)
+        st.caption("Japanese Brand Sales: California vs National")
     
     with tab4:
         st.header("🏢 Brand-Specific Analysis")
         
-        # Brand performance chart
-        brand_chart = create_brand_analysis_chart(sales_df)
-        st.plotly_chart(brand_chart, use_container_width=True)
+        # Brand performance chart and analysis
+        display_brand_analysis(sales_df)
         
-        # Top/bottom performers
+        # Detailed brand performance table
+        st.subheader("Complete Brand Performance Summary")
+        
         ca_sales = sales_df[sales_df['region'] == 'California']
         tariff_start = pd.to_datetime(config.TARIFF_START_DATE)
         
-        brand_performance = []
+        brand_summary = []
+        
         for brand in ca_sales['brand'].unique():
             brand_data = ca_sales[ca_sales['brand'] == brand]
+            
             pre_sales = brand_data[brand_data['date'] < tariff_start]['sales_volume'].sum()
             post_sales = brand_data[brand_data['date'] >= tariff_start]['sales_volume'].sum()
+            total_sales = brand_data['sales_volume'].sum()
+            
             change_pct = ((post_sales - pre_sales) / pre_sales * 100) if pre_sales > 0 else 0
             is_japanese = brand_data['is_japanese'].iloc[0]
             
-            brand_performance.append({
+            brand_summary.append({
                 'Brand': brand,
-                'Sales Change (%)': round(change_pct, 1),
-                'Japanese Brand': 'Yes' if is_japanese else 'No',
-                'Pre-Tariff Sales': pre_sales,
-                'Post-Tariff Sales': post_sales
+                'Japanese': 'Yes' if is_japanese else 'No',
+                'Pre-Tariff Sales': f"{pre_sales:,}",
+                'Post-Tariff Sales': f"{post_sales:,}",
+                'Total Sales': f"{total_sales:,}",
+                'Sales Change (%)': f"{change_pct:.1f}%"
             })
         
-        performance_df = pd.DataFrame(brand_performance).sort_values('Sales Change (%)')
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.subheader("📉 Most Affected Brands")
-            worst_performers = performance_df.head(5)
-            st.dataframe(worst_performers[['Brand', 'Sales Change (%)', 'Japanese Brand']], hide_index=True)
-        
-        with col2:
-            st.subheader("📈 Best Performing Brands") 
-            best_performers = performance_df.tail(5)
-            st.dataframe(best_performers[['Brand', 'Sales Change (%)', 'Japanese Brand']], hide_index=True)
+        brand_summary_df = pd.DataFrame(brand_summary).sort_values('Sales Change (%)')
+        st.dataframe(brand_summary_df, hide_index=True, use_container_width=True)
     
     with tab5:
         st.header("📖 Executive Summary Report")
@@ -757,19 +663,6 @@ def main():
         - Long-term shifts in consumer preferences established
         - Supply chain adjustments by manufacturers
         
-        ### Regional Analysis
-        
-        **California-Specific Patterns:**
-        - California consumers demonstrated elastic demand for Japanese vehicles
-        - Higher-income coastal areas showed greater price sensitivity
-        - Urban markets experienced more pronounced substitution effects
-        - Rural areas maintained higher loyalty to Japanese brands
-        
-        **Comparison with National Trends:**
-        - California patterns aligned with national trends but were amplified
-        - State's environmental preferences initially favored fuel-efficient Japanese models
-        - Tariffs counteracted this natural market advantage
-        
         ### Economic Implications
         
         **Consumer Welfare:**
@@ -787,37 +680,12 @@ def main():
         - Limited evidence of increased domestic automotive production in California
         - Trade-offs between trade policy goals and consumer welfare
         
-        ### Lessons Learned
+        ### Data & Methodology
         
-        **Trade Policy Design:**
-        - Importance of comprehensive impact assessment before implementation
-        - Need to consider regional variations in market structure
-        - Consumer welfare should be weighed against trade policy objectives
-        
-        **Market Dynamics:**
-        - Price elasticity of demand varies significantly across regions and demographics
-        - Brand loyalty can erode quickly under sustained price pressure
-        - Substitution effects create winners and losers within the market
-        
-        **Data-Driven Analysis:**
-        - Rigorous statistical analysis essential for policy evaluation
-        - Regional data provides insights not visible in national aggregates
-        - Long-term monitoring needed to assess persistent effects
-        
-        ### Methodology Notes
-        
-        This analysis employed:
-        - Synthetic data modeling realistic market patterns
+        This analysis employed synthetic data modeling realistic market patterns with:
         - Statistical comparison of pre/post tariff periods
         - Market share and price elasticity calculations
         - Regional trend analysis and correlation studies
-        
-        **Data Sources (Production Version Would Include):**
-        - Bureau of Economic Analysis trade statistics
-        - California Department of Motor Vehicles registration data
-        - Industry pricing databases (KBB, Edmunds, NADA)
-        - Federal Reserve Economic Data (FRED)
-        - Automotive manufacturer sales reports
         
         **Limitations:**
         - Analysis uses synthetic data for demonstration
@@ -833,6 +701,7 @@ def main():
         col1, col2, col3 = st.columns(3)
         
         with col1:
+            st.write("**Price Data Export**")
             if st.button("📥 Download Price Data", use_container_width=True):
                 csv = pricing_df.to_csv(index=False)
                 st.download_button(
@@ -843,6 +712,7 @@ def main():
                 )
         
         with col2:
+            st.write("**Sales Data Export**")
             if st.button("📥 Download Sales Data", use_container_width=True):
                 csv = sales_df.to_csv(index=False)
                 st.download_button(
@@ -853,6 +723,7 @@ def main():
                 )
         
         with col3:
+            st.write("**Summary Export**")
             if st.button("📥 Download Summary", use_container_width=True):
                 summary_data = {
                     'Metric': [
@@ -912,6 +783,12 @@ def main():
         - Price elasticity estimation
         - Regional trend analysis
         
+        **Chart Types:**
+        - Line charts for trends over time
+        - Bar charts for brand comparisons
+        - Area charts for sales volumes
+        - Metric cards for key indicators
+        
         **Data Notes:**
         - Synthetic data for demonstration
         - Realistic market patterns modeled
@@ -923,6 +800,28 @@ def main():
         💡 **Tip:** Use the tabs above to explore different aspects of the analysis. 
         Each section provides detailed insights into how tariffs affected the automotive market.
         """)
+        
+        # Additional sidebar controls
+        st.markdown("---")
+        st.header("⚙️ Display Options")
+        
+        show_raw_data = st.checkbox("Show Raw Data Tables", value=False)
+        if show_raw_data:
+            st.subheader("Raw Data Preview")
+            
+            data_choice = st.selectbox(
+                "Choose dataset to preview:",
+                ["Tariff Data", "Pricing Data", "Sales Data", "Monthly Trends"]
+            )
+            
+            if data_choice == "Tariff Data":
+                st.dataframe(tariff_df.head(10))
+            elif data_choice == "Pricing Data":
+                st.dataframe(pricing_df.head(10))
+            elif data_choice == "Sales Data":
+                st.dataframe(sales_df.head(10))
+            elif data_choice == "Monthly Trends":
+                st.dataframe(monthly_trends.head(10))
 
 if __name__ == "__main__":
     main()
